@@ -6,5 +6,10 @@
     "minimum-stability": "dev",
     "require": {
         "michelf/php-markdown": "^1.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "jun00rbiter\\MarkdownGraph\\": "src/MarkdownGraph/"
+        }
     }
 }
