@@ -15,6 +15,10 @@ use Michelf\MarkdownExtra;
 
 class MarkdownGraph extends MarkdownExtra {
 
+	public $dot_store_directory = __DIR__ . '/../../tmp';
+	public $svg_store_directory = __DIR__ . '/../../tmp';
+	public $url_prefix = "/tmp";
+
 	/**
 	 * コンストラクタ
 	 * @return void
@@ -82,8 +86,10 @@ class MarkdownGraph extends MarkdownExtra {
 
         $out = [];
         $filebase = md5($codeblock);
-        file_put_contents(__DIR__ . "/../graph/{$filebase}.dot",$codeblock);
-        exec("dot -Tsvg -o ".__DIR__ . "/../graph/{$filebase}.svg ".__DIR__ . "/../graph/{$filebase}.dot", $out);
+        file_put_contents($this->dot_store_directory."/{$filebase}.dot",$codeblock);
+        exec(
+			"dot -Tsvg -o " . $this->svg_store_directory . "/{$filebase}.svg "
+			. $this->dot_store_directory . "/{$filebase}.dot", $out);
 
 		$classes = array();
 		if ($classname != "") {
@@ -94,7 +100,9 @@ class MarkdownGraph extends MarkdownExtra {
 		$attr_str = $this->doExtraAttributes('img', $attrs, null, $classes);
 
 		// $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
-		$codeblock  = "<object$attr_str type=\"image/svg+xml\" data=\"graph/{$filebase}.svg\"></object>";
+		$codeblock =
+			"<object$attr_str type=\"image/svg+xml\" "
+			. "data=\"{$this->url_prefix}/{$filebase}.svg\"></object>";
 		return "\n\n".$this->hashBlock($codeblock)."\n\n";
 	}
 }
