@@ -1,0 +1,8 @@
+{
+    "name": "jun00rbiter/markdown-extra-graph",
+    "description": "PHP Markdown Extra を拡張して graphviz のグラフを埋め込む",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "minimum-stability": "dev",
+    "require": {}
+}
