@@ -50,32 +50,32 @@ class MarkdownGraph extends MarkdownExtra
         $less_than_tab = $this->tab_width;
 
         $text = preg_replace_callback('{
-				(?:\n|\A)
-				# 1: Opening marker
-				(
-					(?:@{3,}) # 3 or more tildes/backticks.
-				)
-				[ ]*
-				(?:
-					\.?([-_:a-zA-Z0-9]+) # 2: standalone class name
-				)?
-				[ ]*
-				(?:
-					' . $this->id_class_attr_catch_re . ' # 3: Extra attributes
-				)?
-				[ ]* \n # Whitespace and newline following marker.
+                (?:\n|\A)
+                # 1: Opening marker
+                (
+                    (?:@{3,}) # 3 or more tildes/backticks.
+                )
+                [ ]*
+                (?:
+                    \.?([-_:a-zA-Z0-9]+) # 2: standalone class name
+                )?
+                [ ]*
+                (?:
+                    ' . $this->id_class_attr_catch_re . ' # 3: Extra attributes
+                )?
+                [ ]* \n # Whitespace and newline following marker.
 
-				# 4: Content
-				(
-					(?>
-						(?!\1 [ ]* \n)	# Not a closing marker.
-						.*\n+
-					)+
-				)
+                # 4: Content
+                (
+                    (?>
+                        (?!\1 [ ]* \n)    # Not a closing marker.
+                        .*\n+
+                    )+
+                )
 
-				# Closing marker.
-				\1 [ ]* (?= \n )
-			}xm',
+                # Closing marker.
+                \1 [ ]* (?= \n )
+            }xm',
             array($this, '_doGraphvizBlocks_callback'), $text);
 
         return $text;
@@ -151,7 +151,6 @@ class MarkdownGraph extends MarkdownExtra
      */
     protected function _doHeaders_callback_seq($matches)
     {
-        var_dump($matches);
         $level =& $matches[2];
         $attr  =& $matches[3];
         $title =& $matches[4];
