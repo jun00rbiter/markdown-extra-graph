@@ -90,9 +90,8 @@ class MarkdownGraph extends MarkdownExtra {
 	protected function _doGraphvizBlocks_callback($matches) {
 		$classname =& $matches[2];
 		$attrs     =& $matches[3];
-		$title 	   =& $matches[4];
+		$title 	   =& trim($matches[4]);
 		$codeblock = $matches[5];
-		var_dump($matches);
 
         $out = [];
         $filebase = md5($codeblock);
@@ -111,8 +110,10 @@ class MarkdownGraph extends MarkdownExtra {
 
 		// $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
 		$codeblock =
-			"<object$attr_str type=\"image/svg+xml\" "
-			. "data=\"{$this->url_prefix}/{$filebase}.svg\"></object><span>$title</span>";
+			"<figure>\n" .
+			"  <object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
+			"  <figcaption>$title</figcaption>\n" .
+			"</figure>";
 		return "\n\n".$this->hashBlock($codeblock)."\n\n";
 	}
 }
