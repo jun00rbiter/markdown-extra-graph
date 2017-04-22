@@ -1,4 +1,6 @@
 <?php
+namespace jun00rbiter\MarkdownGraph;
+
 /**
  * MarkdownGraph  -  PHP Markdown Extra に graphviz のグラフ記述シンタックスを追加
  *
@@ -9,11 +11,13 @@
  * @copyright (Original Markdown) John Gruber <https://daringfireball.net/projects/markdown/>
  */
 
-namespace jun00rbiter\MarkdownGraph;
-
 use Michelf\MarkdownExtra;
 
 class MarkdownGraph extends MarkdownExtra {
+
+	public $noChapter = 0;
+	public $noSection = 0;
+	public $noParagraph = 0;
 
 	public $dot_store_directory = __DIR__ . '/../../tmp';
 	public $svg_store_directory = __DIR__ . '/../../tmp';
@@ -56,9 +60,13 @@ class MarkdownGraph extends MarkdownExtra {
 				(?:
 					' . $this->id_class_attr_catch_re . ' # 3: Extra attributes
 				)?
+				[ ]*
+				(?:
+					\[?(.+)\] # 4: graph context
+				)?
 				[ ]* \n # Whitespace and newline following marker.
 				
-				# 4: Content
+				# 5: Content
 				(
 					(?>
 						(?!\1 [ ]* \n)	# Not a closing marker.
@@ -82,7 +90,9 @@ class MarkdownGraph extends MarkdownExtra {
 	protected function _doGraphvizBlocks_callback($matches) {
 		$classname =& $matches[2];
 		$attrs     =& $matches[3];
-		$codeblock = $matches[4];
+		$title 	   =& $matches[4];
+		$codeblock = $matches[5];
+		var_dump($matches);
 
         $out = [];
         $filebase = md5($codeblock);
@@ -102,7 +112,7 @@ class MarkdownGraph extends MarkdownExtra {
 		// $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
 		$codeblock =
 			"<object$attr_str type=\"image/svg+xml\" "
-			. "data=\"{$this->url_prefix}/{$filebase}.svg\"></object>";
+			. "data=\"{$this->url_prefix}/{$filebase}.svg\"></object><span>$title</span>";
 		return "\n\n".$this->hashBlock($codeblock)."\n\n";
 	}
 }
