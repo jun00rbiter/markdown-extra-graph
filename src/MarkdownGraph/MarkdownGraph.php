@@ -15,13 +15,15 @@ use Michelf\MarkdownExtra;
 
 class MarkdownGraph extends MarkdownExtra
 {
-    public $noChapter = 0;
-    public $noSection = 0;
-    public $noParagraph = 0;
-
     public $dot_store_directory = __DIR__ . '/../../tmp';
     public $svg_store_directory = __DIR__ . '/../../tmp';
     public $url_prefix = "/tmp";
+
+    public $chapter_no = 0;
+    public $section_no = 0;
+    public $paragraph_no = 0;
+    public $figure_no = 0;
+    public $table_no = 0;
 
     /**
      * コンストラクタ
@@ -92,7 +94,7 @@ class MarkdownGraph extends MarkdownExtra
     {
         $classname =& $matches[2];
         $attrs     =& $matches[3];
-        $title       =& trim($matches[4]);
+        $title     =& trim($matches[4]);
         $codeblock = $matches[5];
 
         $out = [];
@@ -118,5 +120,73 @@ class MarkdownGraph extends MarkdownExtra
             "  <figcaption>$title</figcaption>\n" .
             "</figure>";
         return "\n\n".$this->hashBlock($codeblock)."\n\n";
+    }
+
+    public function transform($text)
+    {
+        $text = parent::transform($text);
+
+        $text = preg_replace_callback(
+            '{
+                (?:
+                    (^\<h           # $1: header tag
+                        ([123])     # $2: header level
+                        (.*?)       # $3: attributes
+                    [ ]*\>)
+                    (.*)            # $4: title
+                    (\</h\2\>)      # $5: close tag
+                    [ ]*\n+
+                )|(?:
+                    ^[ ]*(
+                        (\<figcaption\>)
+                        (.*?)
+                        \</figcaption\>
+                        [ ]*\n+
+                    )
+                )|(?:
+                    ^[ ]*(
+                        (\<caption\>)
+                        (.*?)
+                        \</caption\>
+                        [ ]*\n+
+                    )
+                )
+            }mx',
+            array($this, '_doHeaders_callback_seq'), $text);
+
+        return $text;
+    }
+
+    /**
+     * Callback for setext headers
+     * @param  array $matches
+     * @return string
+     */
+    protected function _doHeaders_callback_seq($matches)
+    {
+        var_dump($matches);
+        $level =& $matches[2];
+        $attr  =& $matches[3];
+        $title =& $matches[4];
+
+        $header_str = '';
+        if ($level==1) {
+            $this->chapter_no++;
+            $this->section_no=0;
+            $this->paragraph_no=0;
+            $header_str = "{$this->chapter_no}. ";
+        } elseif ($level==2) {
+            $this->section_no++;
+            $this->paragraph_no=0;
+            $header_str = "{$this->chapter_no}.{$this->section_no}. ";
+        } elseif ($level==3) {
+            $this->paragraph_no++;
+            $header_str = "{$this->chapter_no}.{$this->section_no}.{$this->paragraph_no}. ";
+        }
+
+        $defaultId = is_callable($this->header_id_func) ? call_user_func($this->header_id_func, $matches[2]) : null;
+
+        $block = "<h$level$attr>$header_str $title</h$level>";
+        return "\n$block\n\n";
     }
 }
