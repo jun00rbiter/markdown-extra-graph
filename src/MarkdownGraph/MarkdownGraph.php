@@ -230,4 +230,85 @@ class MarkdownGraph extends MarkdownExtra
         var_dump($result);
         return $this->hashPart($result);
     }
+
+    protected function doFencedCodeBlocks($text)
+    {
+        $less_than_tab = $this->tab_width;
+
+        $text = preg_replace_callback('{
+            (?:\n|\A)
+            # 1: Opening marker
+            (
+                (?:~{3,}|`{3,}) # 3 or more tildes/backticks.
+                )
+                [ ]*
+                (?:
+                \"(.+)\"                                # $2: graph title
+                )?
+                [ ]*
+                (?:
+                \.?([-_:a-zA-Z0-9]+)                    # $3: standalone class name
+                )?
+                [ ]*
+                (?:
+                ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
+                )?
+                [ ]* \n # Whitespace and newline following marker.
+
+                # $5: Content
+                (
+                    (?>
+                    (?!\1 [ ]* \n)	# Not a closing marker.
+                    .*\n+
+                    )+
+                    )
+
+                    # Closing marker.
+                    \1 [ ]* (?= \n )
+                }xm',
+                array($this, '_doFencedCodeBlocks_callback'), $text);
+
+        return $text;
+    }
+
+    /**
+    * Callback to process fenced code blocks
+    * @param  array $matches
+    * @return string
+    */
+    protected function _doFencedCodeBlocks_callback($matches)
+    {
+        $title     =& $matches[2];
+        $classname =& $matches[3];
+        $attrs     =& $matches[4];
+        $codeblock = $matches[5];
+
+        if ($this->code_block_content_func) {
+            $codeblock = call_user_func($this->code_block_content_func, $codeblock, $classname);
+        } else {
+            $codeblock = htmlspecialchars($codeblock, ENT_NOQUOTES);
+        }
+
+        $codeblock = preg_replace_callback('/^\n+/',
+        array($this, '_doFencedCodeBlocks_newlines'), $codeblock);
+
+        $classes = array();
+        if ($classname != "") {
+            if ($classname{0} == '.') {
+                $classname = substr($classname, 1);
+            }
+            $classes[] = $this->code_class_prefix . $classname;
+        }
+        $attr_str = $this->doExtraAttributes($this->code_attr_on_pre ? "pre" : "code", $attrs, null, $classes);
+        $pre_attr_str  = $this->code_attr_on_pre ? $attr_str : '';
+        $code_attr_str = $this->code_attr_on_pre ? '' : $attr_str;
+        $codeblock  =
+        "<figure>\n".
+        "<pre$pre_attr_str>\n".
+        "<figcaption>$title</figcaption>\n".
+        "<code$code_attr_str>$codeblock</code></pre>\n".
+        "</figure>";
+
+        return "\n\n".$this->hashBlock($codeblock)."\n\n";
+    }
 }
