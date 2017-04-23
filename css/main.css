@@ -1,0 +1,375 @@
+html {
+  font-family: sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+}
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+nav,
+section,
+summary {
+  display: block;
+}
+audio,
+canvas,
+progress,
+video {
+  display: inline-block;
+  vertical-align: baseline;
+}
+audio:not([controls]) {
+  display: none;
+  height: 0;
+}
+[hidden],
+template {
+  display: none;
+}
+a {
+  background: transparent;
+}
+a:active,
+a:hover {
+  outline: 0;
+}
+abbr[title] {
+  border-bottom: 1px dotted;
+}
+b,
+strong {
+  font-weight: bold;
+}
+dfn {
+  font-style: italic;
+}
+h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+mark {
+  background: #ff0;
+  color: #000;
+}
+small {
+  font-size: 80%;
+}
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+sup {
+  top: -0.5em;
+}
+sub {
+  bottom: -0.25em;
+}
+img {
+  border: 0;
+}
+svg:not(:root) {
+  overflow: hidden;
+}
+figure {
+  margin: 1em 40px;
+}
+hr {
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  height: 0;
+}
+pre {
+  overflow: auto;
+}
+code,
+kbd,
+pre,
+samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+button {
+  overflow: visible;
+}
+button,
+select {
+  text-transform: none;
+}
+button,
+html input[type="button"] {
+  -webkit-appearance: button;
+  cursor: pointer;
+}
+button[disabled],
+html input[disabled] {
+  cursor: default;
+}
+button
+input::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+input {
+  line-height: normal;
+}
+input[type="reset"],
+input[type="submit"] {
+  -webkit-appearance: button;
+  cursor: pointer;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+input[type="search"] {
+  -webkit-appearance: textfield;
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+}
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+fieldset {
+  border: 1px solid #c0c0c0;
+  margin: 0 2px;
+  padding: 0.35em 0.625em 0.75em;
+}
+legend {
+  border: 0;
+  padding: 0;
+}
+textarea {
+  overflow: auto;
+}
+optgroup {
+  font-weight: bold;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+td,
+th {
+  padding: 0;
+}
+.markdown {
+  width: 19cm;
+  margin: 0;
+  padding: 0 0 0 15pt;
+}
+.markdown div,
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6,
+.markdown p,
+.markdown span,
+.markdown ul,
+.markdown ol,
+.markdown dl,
+.markdown dt,
+.markdown dd,
+.markdown li,
+.markdown table,
+.markdown caption,
+.markdown thead,
+.markdown tbody,
+.markdown tr,
+.markdown th,
+.markdown td,
+.markdown figure,
+.markdown figcaption,
+.markdown object,
+.markdown pre,
+.markdown code,
+.markdown img,
+.markdown li p,
+.markdown blockquote {
+  font-family: 'ＭＳ P明朝', 'Times New Roman', Times, serif;
+  font-size: 12pt;
+  line-height: 1.3;
+  margin: 0;
+  padding: 0;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6,
+.markdown ul,
+.markdown ol,
+.markdown dl,
+.markdown dt,
+.markdown li,
+.markdown li p,
+.markdown caption,
+.markdown thead,
+.markdown th,
+.markdown figure,
+.markdown figcaption,
+.markdown object,
+.markdown img {
+  font-family: 'ＭＳ Pゴシック', Arial, Helvetica, sans-serif;
+}
+.markdown h1 {
+  font-size: 21pt;
+  font-weight: bold;
+  background: black;
+  color: white;
+  margin-left: -15pt;
+  margin-top: 0;
+  margin-bottom: 15pt;
+  padding: 2pt 10pt;
+}
+.markdown h2 {
+  font-size: 19pt;
+  font-weight: bold;
+  margin-left: -15pt;
+  margin-top: 15pt;
+  margin-bottom: 15pt;
+  border: solid 1pt #888;
+  border-width: 1pt 5pt 1pt 5pt;
+  padding: 2pt 5pt;
+}
+.markdown h3 {
+  font-size: 17pt;
+  font-weight: bold;
+  margin-left: -15pt;
+  margin-top: 15pt;
+  margin-bottom: 15pt;
+  border: solid 1pt #888;
+  border-width: 0 0 1pt 5pt;
+  padding: 2pt 10pt 2pt 5pt;
+}
+.markdown h4 {
+  font-size: 17pt;
+  font-weight: bold;
+  margin-left: -15pt;
+  margin-top: 15pt;
+  margin-bottom: 15pt;
+  padding: 2pt 10pt;
+}
+.markdown h5 {
+  font-size: 13pt;
+  text-decoration: underline;
+  font-weight: bold;
+  margin-top: 15pt;
+  margin-bottom: 8pt;
+}
+.markdown h6 {
+  font-size: 13pt;
+  font-weight: bold;
+  margin-top: 15pt;
+  margin-bottom: 8pt;
+}
+.markdown p,
+.markdown dd {
+  margin: 0 0 8pt 0;
+}
+.markdown table,
+.markdown ul,
+.markdown ol,
+.markdown dl,
+.markdown figure,
+.markdown pre {
+  margin: 16pt 0 16pt 0;
+}
+.markdown figure pre {
+  margin-top: 0;
+}
+.markdown li,
+.markdown li p,
+.markdown ul dl,
+.markdown ul ol,
+.markdown ol dl,
+.markdown ol ul,
+.markdown dl ol,
+.markdown dl ul {
+  margin-top: 0pt;
+  margin-bottom: 0pt;
+}
+.markdown li:last-child {
+  margin-bottom: 8pt;
+}
+.markdown pre,
+.markdown code {
+  font-family: Courier New, Courier, monospace;
+}
+.markdown pre {
+  border: solid 0.2pt #888;
+  background: #ffffee;
+  padding: 2pt 5pt;
+}
+.markdown pre code {
+  line-height: 1.5;
+}
+.markdown ul,
+.markdown ol {
+  margin-left: 30pt;
+}
+.markdown dl,
+.markdown dd {
+  margin-left: 20pt;
+}
+.markdown dt {
+  font-style: italic;
+}
+.markdown dt:after {
+  content: ' : ';
+}
+.markdown figcaption,
+.markdown caption {
+  font-size: 11pt;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 3pt;
+}
+.markdown table th {
+  padding: 2pt;
+  font-weight: bold;
+  background: #aaa;
+  border: solid 1pt black;
+  border-width: 0.2pt 0.2pt 1pt 0.2pt;
+}
+.markdown table td {
+  padding: 2pt;
+  border: solid 1pt black;
+  border-width: 0 0.2pt 0.2pt 0.2pt;
+}
+.markdown object.svg {
+  display: block;
+  max-width: 80%;
+  padding: 10pt;
+  border: solid 1pt #888;
+}

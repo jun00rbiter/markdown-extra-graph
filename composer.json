@@ -7,6 +7,10 @@
     "require": {
         "michelf/php-markdown": "^1.7"
     },
+    "require-dev": {
+        "leafo/lessphp": "^0.4.0@dev",
+        "FriendsOfPHP/PHP-CS-Fixer": "^2.3@dev"
+    },
     "autoload": {
         "psr-4": {
             "jun00rbiter\\MarkdownGraph\\": "src/MarkdownGraph/"
