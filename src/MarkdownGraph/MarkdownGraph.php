@@ -23,6 +23,7 @@ class MarkdownGraph extends MarkdownExtra
     public $section_no = 0;
     public $paragraph_no = 0;
     public $figure_no = 0;
+    public $list_no = 0;
     public $table_no = 0;
 
     /**
@@ -115,10 +116,10 @@ class MarkdownGraph extends MarkdownExtra
 
         // $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
         $codeblock =
-            "<p><figure>\n" .
+            "<figure>\n" .
             "<figcaption>$title</figcaption>\n" .
             "<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
-            "</figure></p>";
+            "</figure>";
         return "\n".$this->hashBlock($codeblock)."\n\n";
     }
 
@@ -136,18 +137,17 @@ class MarkdownGraph extends MarkdownExtra
                     (.*)                # $4: header title
                     \</h\2\>
                     [ ]*\n+
-                )|^[ ]*(?:
-                    (\<figcaption\>)    # $5: figcaption tag
-                    (.*?)               # $6: fig caption
-                    \</figcaption\>
-                    [ ]*\n+
                 )|(?:
-                    ^[ ]*(?:
-                        (\<caption\>)
-                        (.*?)
-                        \</caption\>
-                        [ ]*\n+
-                    )
+                    ^[ ]*(\<figcaption\>)    # $5: figcaption tag
+                    (.*?)               # $6: fig or list caption
+                    \</figcaption\>
+					[ ]*\n+
+					(?=\<(img|object|pre)) # $7: after tag
+                )|(?:
+					^[ ]*(\<caption\>)		# $8: caption tag
+					(.*?)					# $9: table caption
+					\</caption\>
+					[ ]*\n+
                 )
             }mx',
             array($this, '_doNumbers_callback'), $text);
@@ -173,6 +173,9 @@ class MarkdownGraph extends MarkdownExtra
                 $this->chapter_no++;
                 $this->section_no=0;
                 $this->paragraph_no=0;
+                $this->list_no = 0;
+                $this->figure_no = 0;
+                $this->table_no = 0;
                 $header_str = "{$this->chapter_no} ";
             } elseif ($level==2) {
                 $this->section_no++;
@@ -189,13 +192,31 @@ class MarkdownGraph extends MarkdownExtra
 
         if (!empty($matches[6])) {
             $title =& $matches[6];
+            $after =& $matches[7];
 
             $fig_str = '';
-            $this->figure_no++;
-            $fig_str = "図{$this->chapter_no}.{$this->figure_no} ";
+            switch ($after) {
+            case 'pre':
+                $this->list_no++;
+                   $fig_str = "リスト{$this->chapter_no}.{$this->figure_no} ";
+                $id = sprintf("#list_%02d_%02d", $this->chapter_no, $this->list_no);
+                break;
+            case 'object':
+            case 'img':
+                $this->figure_no++;
+                  $fig_str = "図{$this->chapter_no}.{$this->figure_no} ";
+                $id = sprintf("#fig_%02d_%02d", $this->chapter_no, $this->figure_no);
+            }
 
-            $id = sprintf("#fig_%02d_%02d", $this->chapter_no, $this->figure_no);
             $block = "<figcaption id=\"$id\">$fig_str$title</figcaption>\n";
+        }
+
+        if (!empty($matches[9])) {
+            $title =& $matches[9];
+            $this->table_no++;
+            $table_str = "表{$this->chapter_no}.{$this->table_no} ";
+            $id = sprintf("#list_%02d_%02d", $this->chapter_no, $this->list_no);
+            $block = "<caption id=\"$id\">$table_str$title</caption>\n";
         }
         return "$block";
     }
@@ -302,13 +323,190 @@ class MarkdownGraph extends MarkdownExtra
         $attr_str = $this->doExtraAttributes($this->code_attr_on_pre ? "pre" : "code", $attrs, null, $classes);
         $pre_attr_str  = $this->code_attr_on_pre ? $attr_str : '';
         $code_attr_str = $this->code_attr_on_pre ? '' : $attr_str;
-        $codeblock  =
-        "<figure>\n".
-        "<pre$pre_attr_str>\n".
-        "<figcaption>$title</figcaption>\n".
-        "<code$code_attr_str>$codeblock</code></pre>\n".
-        "</figure>";
+
+        if (!empty($title)) {
+            $codeblock  =
+                "<figure>\n".
+                "<figcaption>$title</figcaption>\n".
+                "<pre$pre_attr_str>\n".
+                "<code$code_attr_str>$codeblock</code></pre>\n".
+                "</figure>";
+        } else {
+            $codeblock="<pre$pre_attr_str><code$code_attr_str>$codeblock</code></pre>";
+        }
 
         return "\n\n".$this->hashBlock($codeblock)."\n\n";
+    }
+
+    /**
+     * Form HTML tables.
+     * @param  string $text
+     * @return string
+     */
+    protected function doTables($text)
+    {
+        $less_than_tab = $this->tab_width - 1;
+        // Find tables with leading pipe.
+        //
+        //	| Header 1 | Header 2 | "title"
+        //	| -------- | --------
+        //	| Cell 1   | Cell 2
+        //	| Cell 3   | Cell 4
+        $text = preg_replace_callback('
+			{
+				^							# Start of a line
+				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
+				[|]							# Optional leading pipe (present)
+				(.+?)   					# $1: Header row (at least one pipe)
+				(?:[|]?[ ]*\"([^\"]+?)\")?		# $2: title
+				[ ]*\n
+				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
+				[|] ([ ]*[-:]+[-| :]*) \n	# $3: Header underline
+				
+				(							# $4: Cells
+					(?>
+						[ ]*				# Allowed whitespace.
+						[|] .* \n			# Row content.
+					)*
+				)
+				(?=\n|\Z)					# Stop at final double newline.
+			}xm',
+            array($this, '_doTable_leadingPipe_callback'), $text);
+
+        // Find tables without leading pipe.
+        //
+        //	Header 1 | Header 2
+        //	-------- | --------
+        //	Cell 1   | Cell 2
+        //	Cell 3   | Cell 4
+        $text = preg_replace_callback('
+			{
+				^							# Start of a line
+				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
+				(\S.*[|].*?)				# $1: Header row (at least one pipe)
+				(?:[ ]*\"([^\"]+?)\")?			# $2: title
+				[ ]*\n
+				
+				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
+				([-:]+[ ]*[|][-| :]*) \n	# $2: Header underline
+				
+				(							# $3: Cells
+					(?>
+						.* [|] .* \n		# Row content
+					)*
+				)
+				(?=\n|\Z)					# Stop at final double newline.
+			}xm',
+            array($this, '_DoTable_callback'), $text);
+
+        return $text;
+    }
+
+    /**
+     * Callback for removing the leading pipe for each row
+     * @param  array $matches
+     * @return string
+     */
+    protected function _doTable_leadingPipe_callback($matches)
+    {
+        $head        = $matches[1];
+        $title        = $matches[2];
+        $underline    = $matches[3];
+        $content    = $matches[4];
+
+        $content    = preg_replace('/^ *[|]/m', '', $content);
+        
+        return $this->_doTable_callback(array($matches[0], $head, $title, $underline, $content));
+    }
+
+    /**
+     * Make the align attribute in a table
+     * @param  string $alignname
+     * @return string
+     */
+    protected function _doTable_makeAlignAttr($alignname)
+    {
+        if (empty($this->table_align_class_tmpl)) {
+            return " align=\"$alignname\"";
+        }
+
+        $classname = str_replace('%%', $alignname, $this->table_align_class_tmpl);
+        return " class=\"$classname\"";
+    }
+
+    /**
+     * Calback for processing tables
+     * @param  array $matches
+     * @return string
+     */
+    protected function _doTable_callback($matches)
+    {
+        $head        = $matches[1];
+        $title        = $matches[2];
+        $underline    = $matches[3];
+        $content    = $matches[4];
+
+        // Remove any tailing pipes for each line.
+        $head        = preg_replace('/[|] *$/m', '', $head);
+        $underline    = preg_replace('/[|] *$/m', '', $underline);
+        $content    = preg_replace('/[|] *$/m', '', $content);
+        
+        // Reading alignement from header underline.
+        $separators    = preg_split('/ *[|] */', $underline);
+        foreach ($separators as $n => $s) {
+            if (preg_match('/^ *-+: *$/', $s)) {
+                $attr[$n] = $this->_doTable_makeAlignAttr('right');
+            } elseif (preg_match('/^ *:-+: *$/', $s)) {
+                $attr[$n] = $this->_doTable_makeAlignAttr('center');
+            } elseif (preg_match('/^ *:-+ *$/', $s)) {
+                $attr[$n] = $this->_doTable_makeAlignAttr('left');
+            } else {
+                $attr[$n] = '';
+            }
+        }
+        
+        // Parsing span elements, including code spans, character escapes,
+        // and inline HTML tags, so that pipes inside those gets ignored.
+        $head        = $this->parseSpan($head);
+        $headers    = preg_split('/ *[|] */', $head);
+        $col_count    = count($headers);
+        $attr       = array_pad($attr, $col_count, '');
+        
+        // Write column headers.
+        $text = "<table>\n";
+        if (!empty($title)) {
+            $text .= "<caption>$title</caption>\n";
+        }
+        $text .= "<thead>\n";
+        $text .= "<tr>\n";
+        foreach ($headers as $n => $header) {
+            $text .= "  <th$attr[$n]>" . $this->runSpanGamut(trim($header)) . "</th>\n";
+        }
+        $text .= "</tr>\n";
+        $text .= "</thead>\n";
+        
+        // Split content by row.
+        $rows = explode("\n", trim($content, "\n"));
+        
+        $text .= "<tbody>\n";
+        foreach ($rows as $row) {
+            // Parsing span elements, including code spans, character escapes,
+            // and inline HTML tags, so that pipes inside those gets ignored.
+            $row = $this->parseSpan($row);
+            
+            // Split row by cell.
+            $row_cells = preg_split('/ *[|] */', $row, $col_count);
+            $row_cells = array_pad($row_cells, $col_count, '');
+            
+            $text .= "<tr>\n";
+            foreach ($row_cells as $n => $cell) {
+                $text .= "  <td$attr[$n]>" . $this->runSpanGamut(trim($cell)) . "</td>\n";
+            }
+            $text .= "</tr>\n";
+        }
+        $text .= "</tbody>\n";
+        $text .= "</table>";
+        
+        return $this->hashBlock($text) . "\n";
     }
 }
