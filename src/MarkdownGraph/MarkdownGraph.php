@@ -116,10 +116,10 @@ class MarkdownGraph extends MarkdownExtra
         // $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
         $codeblock =
             "<figure>\n" .
-            "  <object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
-            "  <figcaption>$title</figcaption>\n" .
+            "<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
+            "<figcaption>$title</figcaption>\n" .
             "</figure>";
-        return "\n\n".$this->hashBlock($codeblock)."\n\n";
+        return "\n".$this->hashBlock($codeblock)."\n\n";
     }
 
     public function transform($text)
@@ -129,22 +129,20 @@ class MarkdownGraph extends MarkdownExtra
         $text = preg_replace_callback(
             '{
                 (?:
-                    (^\<h           # $1: header tag
-                        ([123])     # $2: header level
-                        (.*?)       # $3: attributes
+                    ^[ ]*(\<h           # $1: header tag
+                        ([123])         # $2: header level
+                        (.*?)           # $3: attributes
                     [ ]*\>)
-                    (.*)            # $4: title
-                    (\</h\2\>)      # $5: close tag
+                    (.*)                # $4: header title
+                    \</h\2\>
+                    [ ]*\n+
+                )|^[ ]*(?:
+                    (\<figcaption\>)    # $5: figcaption tag
+                    (.*?)               # $6: fig caption
+                    \</figcaption\>
                     [ ]*\n+
                 )|(?:
-                    ^[ ]*(
-                        (\<figcaption\>)
-                        (.*?)
-                        \</figcaption\>
-                        [ ]*\n+
-                    )
-                )|(?:
-                    ^[ ]*(
+                    ^[ ]*(?:
                         (\<caption\>)
                         (.*?)
                         \</caption\>
@@ -152,7 +150,7 @@ class MarkdownGraph extends MarkdownExtra
                     )
                 )
             }mx',
-            array($this, '_doHeaders_callback_seq'), $text);
+            array($this, '_doNumbers_callback'), $text);
 
         return $text;
     }
@@ -162,31 +160,43 @@ class MarkdownGraph extends MarkdownExtra
      * @param  array $matches
      * @return string
      */
-    protected function _doHeaders_callback_seq($matches)
+    protected function _doNumbers_callback($matches)
     {
-        var_dump($matches);
-        $level =& $matches[2];
-        $attr  =& $matches[3];
-        $title =& $matches[4];
+        $block = $matches[0];
+        if (!empty($matches[4])) {
+            $level =& $matches[2];
+            $attr  =& $matches[3];
+            $title =& $matches[4];
 
-        $header_str = '';
-        if ($level==1) {
-            $this->chapter_no++;
-            $this->section_no=0;
-            $this->paragraph_no=0;
-            $header_str = "{$this->chapter_no}. ";
-        } elseif ($level==2) {
-            $this->section_no++;
-            $this->paragraph_no=0;
-            $header_str = "{$this->chapter_no}.{$this->section_no}. ";
-        } elseif ($level==3) {
-            $this->paragraph_no++;
-            $header_str = "{$this->chapter_no}.{$this->section_no}.{$this->paragraph_no}. ";
+            $header_str = '';
+            if ($level==1) {
+                $this->chapter_no++;
+                $this->section_no=0;
+                $this->paragraph_no=0;
+                $header_str = "{$this->chapter_no} ";
+            } elseif ($level==2) {
+                $this->section_no++;
+                $this->paragraph_no=0;
+                $header_str = "{$this->chapter_no}.{$this->section_no} ";
+            } elseif ($level==3) {
+                $this->paragraph_no++;
+                $header_str = "{$this->chapter_no}.{$this->section_no}.{$this->paragraph_no} ";
+            }
+
+            $id = sprintf("#sec_%02d_%02d_%02d", $this->chapter_no, $this->section_no, $this->paragraph_no);
+            $block = "<h$level id=\"$id\"$attr>$header_str$title</h$level>\n";
         }
 
-        $defaultId = is_callable($this->header_id_func) ? call_user_func($this->header_id_func, $matches[2]) : null;
+        if (!empty($matches[6])) {
+            $title =& $matches[6];
 
-        $block = "<h$level$attr>$header_str $title</h$level>";
-        return "\n$block\n\n";
+            $fig_str = '';
+            $this->figure_no++;
+            $fig_str = "図{$this->chapter_no}.{$this->figure_no} ";
+
+            $id = sprintf("#fig_%02d_%02d", $this->chapter_no, $this->figure_no);
+            $block = "<figcaption id=\"$id\">$fig_str$title</h$level>\n";
+        }
+        return "$block";
     }
 }
