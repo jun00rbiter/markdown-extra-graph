@@ -57,19 +57,19 @@ class MarkdownGraph extends MarkdownExtra
                 )
                 [ ]*
                 (?:
-                    \.?([-_:a-zA-Z0-9]+) # 2: standalone class name
+                    \"(.+)\"                                # $2: graph title
                 )?
                 [ ]*
                 (?:
-                    ' . $this->id_class_attr_catch_re . ' # 3: Extra attributes
+                    \.?([-_:a-zA-Z0-9]+)                    # $3: standalone class name
                 )?
                 [ ]*
                 (?:
-                    \[?(.+)\] # 4: graph context
+                    ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
                 )?
                 [ ]* \n # Whitespace and newline following marker.
 
-                # 5: Content
+                # $5: Content
                 (
                     (?>
                         (?!\1 [ ]* \n)    # Not a closing marker.
@@ -92,9 +92,9 @@ class MarkdownGraph extends MarkdownExtra
      */
     protected function _doGraphvizBlocks_callback($matches)
     {
-        $classname =& $matches[2];
-        $attrs     =& $matches[3];
-        $title     =& trim($matches[4]);
+        $classname =& $matches[3];
+        $attrs     =& $matches[4];
+        $title     =& trim($matches[2]);
         $codeblock = $matches[5];
 
         $out = [];
