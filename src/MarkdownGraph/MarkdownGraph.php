@@ -115,10 +115,10 @@ class MarkdownGraph extends MarkdownExtra
 
         // $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
         $codeblock =
-            "<figure>\n" .
-            "<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
+            "<p><figure>\n" .
             "<figcaption>$title</figcaption>\n" .
-            "</figure>";
+            "<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
+            "</figure></p>";
         return "\n".$this->hashBlock($codeblock)."\n\n";
     }
 
@@ -195,8 +195,39 @@ class MarkdownGraph extends MarkdownExtra
             $fig_str = "図{$this->chapter_no}.{$this->figure_no} ";
 
             $id = sprintf("#fig_%02d_%02d", $this->chapter_no, $this->figure_no);
-            $block = "<figcaption id=\"$id\">$fig_str$title</h$level>\n";
+            $block = "<figcaption id=\"$id\">$fig_str$title</figcaption>\n";
         }
         return "$block";
+    }
+
+    protected function _doImages_inline_callback($matches)
+    {
+        $whole_match    = $matches[1];
+        $alt_text        = $matches[2];
+        $url            = $matches[3] == '' ? $matches[4] : $matches[3];
+        $title            =& $matches[7];
+        $attr  = $this->doExtraAttributes("img", $dummy =& $matches[8]);
+
+        $alt_text = $this->encodeAttribute($alt_text);
+        $url = $this->encodeURLAttribute($url);
+        $result ='';
+        if (isset($title)) {
+            $result =
+                "<figure>\n".
+                "<figcaption>$title</figcaption>\n";
+        }
+        $result .=
+            "<img src=\"$url\" alt=\"$alt_text\"";
+        if (isset($title)) {
+            $title = $this->encodeAttribute($title);
+            $result .=  " title=\"$title\""; // $title already quoted
+        }
+        $result .= $attr;
+        $result .= $this->empty_element_suffix;
+        if (isset($title)) {
+            $result .=  "\n</figure>";
+        }
+        var_dump($result);
+        return $this->hashPart($result);
     }
 }
