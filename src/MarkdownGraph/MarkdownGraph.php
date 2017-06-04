@@ -5,8 +5,8 @@ namespace jun00rbiter\MarkdownGraph;
  * MarkdownGraph  -  PHP Markdown Extra に graphviz のグラフ記述シンタックスを追加
  *
  * @package   markdown-extra-graph
- * @author    jun00rbiter <jun00rbiter@gmail.com>
- * @copyright 2017- jun00rbiter <https://michelf.com/projects/php-markdown/>
+ * @author    jun00rbiter
+ * @copyright jun00rbiter <https://github.com/jun00rbiter/markdown-extra-graph> 
  * @copyright (Original PHP Markdown Extra) Michel Fortin <https://michelf.com/projects/php-markdown/>
  * @copyright (Original Markdown) John Gruber <https://daringfireball.net/projects/markdown/>
  */
@@ -362,7 +362,7 @@ class MarkdownGraph extends MarkdownExtra
 				[ ]*\n
 				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
 				[|] ([ ]*[-:]+[-| :]*) \n	# $3: Header underline
-				
+
 				(							# $4: Cells
 					(?>
 						[ ]*				# Allowed whitespace.
@@ -386,10 +386,10 @@ class MarkdownGraph extends MarkdownExtra
 				(\S.*[|].*?)				# $1: Header row (at least one pipe)
 				(?:[ ]*\"([^\"]+?)\")?			# $2: title
 				[ ]*\n
-				
+
 				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
 				([-:]+[ ]*[|][-| :]*) \n	# $2: Header underline
-				
+
 				(							# $3: Cells
 					(?>
 						.* [|] .* \n		# Row content
@@ -415,7 +415,7 @@ class MarkdownGraph extends MarkdownExtra
         $content    = $matches[4];
 
         $content    = preg_replace('/^ *[|]/m', '', $content);
-        
+
         return $this->_doTable_callback(array($matches[0], $head, $title, $underline, $content));
     }
 
@@ -450,7 +450,7 @@ class MarkdownGraph extends MarkdownExtra
         $head        = preg_replace('/[|] *$/m', '', $head);
         $underline    = preg_replace('/[|] *$/m', '', $underline);
         $content    = preg_replace('/[|] *$/m', '', $content);
-        
+
         // Reading alignement from header underline.
         $separators    = preg_split('/ *[|] */', $underline);
         foreach ($separators as $n => $s) {
@@ -464,14 +464,14 @@ class MarkdownGraph extends MarkdownExtra
                 $attr[$n] = '';
             }
         }
-        
+
         // Parsing span elements, including code spans, character escapes,
         // and inline HTML tags, so that pipes inside those gets ignored.
         $head        = $this->parseSpan($head);
         $headers    = preg_split('/ *[|] */', $head);
         $col_count    = count($headers);
         $attr       = array_pad($attr, $col_count, '');
-        
+
         // Write column headers.
         $text = "<table>\n";
         if (!empty($title)) {
@@ -484,20 +484,20 @@ class MarkdownGraph extends MarkdownExtra
         }
         $text .= "</tr>\n";
         $text .= "</thead>\n";
-        
+
         // Split content by row.
         $rows = explode("\n", trim($content, "\n"));
-        
+
         $text .= "<tbody>\n";
         foreach ($rows as $row) {
             // Parsing span elements, including code spans, character escapes,
             // and inline HTML tags, so that pipes inside those gets ignored.
             $row = $this->parseSpan($row);
-            
+
             // Split row by cell.
             $row_cells = preg_split('/ *[|] */', $row, $col_count);
             $row_cells = array_pad($row_cells, $col_count, '');
-            
+
             $text .= "<tr>\n";
             foreach ($row_cells as $n => $cell) {
                 $text .= "  <td$attr[$n]>" . $this->runSpanGamut(trim($cell)) . "</td>\n";
@@ -506,7 +506,7 @@ class MarkdownGraph extends MarkdownExtra
         }
         $text .= "</tbody>\n";
         $text .= "</table>";
-        
+
         return $this->hashBlock($text) . "\n";
     }
 }
