@@ -6,7 +6,7 @@ namespace jun00rbiter\MarkdownGraph;
  *
  * @package   markdown-extra-graph
  * @author    jun00rbiter
- * @copyright jun00rbiter <https://github.com/jun00rbiter/markdown-extra-graph> 
+ * @copyright jun00rbiter <https://github.com/jun00rbiter/markdown-extra-graph>
  * @copyright (Original PHP Markdown Extra) Michel Fortin <https://michelf.com/projects/php-markdown/>
  * @copyright (Original Markdown) John Gruber <https://daringfireball.net/projects/markdown/>
  */
@@ -15,9 +15,10 @@ use Michelf\MarkdownExtra;
 
 class MarkdownGraph extends MarkdownExtra
 {
-    public $dot_store_directory = __DIR__ . '/../../tmp';
-    public $svg_store_directory = __DIR__ . '/../../tmp';
-    public $url_prefix = "/tmp";
+    public $dot_store_directory = '';
+    public $svg_store_directory = '';
+    public $url_prefix = '';
+    public $graphvizDir = '';
 
     public $chapter_no = 0;
     public $section_no = 0;
@@ -95,15 +96,15 @@ class MarkdownGraph extends MarkdownExtra
     {
         $classname =& $matches[3];
         $attrs     =& $matches[4];
-        $title     =& trim($matches[2]);
+        $title     = trim($matches[2]);
         $codeblock = $matches[5];
 
         $out = [];
         $filebase = md5($codeblock);
-        file_put_contents($this->dot_store_directory."/{$filebase}.dot", $codeblock);
-        exec(
-            "dot -Tsvg -o " . $this->svg_store_directory . "/{$filebase}.svg "
-            . $this->dot_store_directory . "/{$filebase}.dot", $out);
+        file_put_contents($this->dot_store_directory."{$filebase}.dot", $codeblock);
+        $cmd = "{$this->graphvizDir}dot.exe -Tsvg -o " . str_replace("\\", '/', $this->svg_store_directory) . "{$filebase}.svg "
+        . str_replace("\\", '/', $this->dot_store_directory) . "{$filebase}.dot";
+        exec($cmd, $out);
 
         $classes = array();
         if ($classname != "") {
@@ -118,7 +119,8 @@ class MarkdownGraph extends MarkdownExtra
         $codeblock =
             "<figure>\n" .
             "<figcaption>$title</figcaption>\n" .
-            "<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}/{$filebase}.svg\"></object>\n" .
+            //"<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}{$filebase}.svg\"></object>\n" .
+            "<img$attr_str src=\"{$this->url_prefix}{$filebase}.svg\" />\n" .
             "</figure>";
         return "\n".$this->hashBlock($codeblock)."\n\n";
     }
@@ -248,7 +250,6 @@ class MarkdownGraph extends MarkdownExtra
         if (isset($title)) {
             $result .=  "\n</figure>";
         }
-        var_dump($result);
         return $this->hashPart($result);
     }
 
