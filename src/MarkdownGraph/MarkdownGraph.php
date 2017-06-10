@@ -61,7 +61,7 @@ class MarkdownGraph extends MarkdownExtra
                 (?:\n|\A)
                 # 1: Opening marker
                 (
-                    (?:@{3,}) # 3 or more tildes/backticks.
+                    (?:@{3,})                               # 3 or more tildes/backticks.
                 )
                 [ ]*
                 (?:
@@ -75,12 +75,12 @@ class MarkdownGraph extends MarkdownExtra
                 (?:
                     ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
                 )?
-                [ ]* \n # Whitespace and newline following marker.
+                [ ]* \n                                     # Whitespace and newline following marker.
 
                 # $5: Content
                 (
                     (?>
-                        (?!\1 [ ]* \n)    # Not a closing marker.
+                        (?!\1 [ ]* \n)                      # Not a closing marker.
                         .*\n+
                     )+
                 )
@@ -138,24 +138,24 @@ class MarkdownGraph extends MarkdownExtra
         $text = preg_replace_callback(
             '{
                 (?:
-                    ^[ ]*(\<h           # $1: header tag
-                        ([123])         # $2: header level
-                        (.*?)           # $3: attributes
+                    ^[ ]*(\<h               # $1: header tag
+                        ([123])             # $2: header level
+                        (.*?)               # $3: attributes
                     [ ]*\>)
-                    (.*)                # $4: header title
+                    (.*)                    # $4: header title
                     \</h\2\>
                     [ ]*\n+
                 )|(?:
-                    ^[ ]*(\<figcaption\>)    # $5: figcaption tag
-                    (.*?)               # $6: fig or list caption
+                    ^[ ]*(\<figcaption\>)   # $5: figcaption tag
+                    (.*?)                   # $6: fig or list caption
                     \</figcaption\>
-					[ ]*\n+
-					(?=\<(img|object|pre)) # $7: after tag
+                    [ ]*\n+
+                    (?=\<(img|object|pre))  # $7: after tag
                 )|(?:
-					^[ ]*(\<caption\>)		# $8: caption tag
-					(.*?)					# $9: table caption
-					\</caption\>
-					[ ]*\n+
+                    ^[ ]*(\<caption\>)      # $8: caption tag
+                    (.*?)                   # $9: table caption
+                    \</caption\>
+                    [ ]*\n+
                 )
             }mx',
             array($this, '_doNumbers_callback'), $text);
@@ -206,13 +206,13 @@ class MarkdownGraph extends MarkdownExtra
             switch ($after) {
             case 'pre':
                 $this->list_no++;
-                   $fig_str = "リスト{$this->chapter_no}.{$this->figure_no} ";
+                   $fig_str = "リスト{$this->chapter_no}.{$this->list_no}) ";
                 $id = sprintf("#list_%02d_%02d", $this->chapter_no, $this->list_no);
                 break;
             case 'object':
             case 'img':
                 $this->figure_no++;
-                  $fig_str = "図{$this->chapter_no}.{$this->figure_no} ";
+                  $fig_str = "図{$this->chapter_no}.{$this->figure_no}) ";
                 $id = sprintf("#fig_%02d_%02d", $this->chapter_no, $this->figure_no);
             }
 
@@ -222,8 +222,8 @@ class MarkdownGraph extends MarkdownExtra
         if (!empty($matches[9])) {
             $title =& $matches[9];
             $this->table_no++;
-            $table_str = "表{$this->chapter_no}.{$this->table_no} ";
-            $id = sprintf("#list_%02d_%02d", $this->chapter_no, $this->list_no);
+            $table_str = "表{$this->chapter_no}.{$this->table_no}) ";
+            $id = sprintf("#table_%02d_%02d", $this->chapter_no, $this->table_no);
             $block = "<caption id=\"$id\">$table_str$title</caption>\n";
         }
         return "$block";
@@ -232,15 +232,15 @@ class MarkdownGraph extends MarkdownExtra
     protected function _doImages_inline_callback($matches)
     {
         $whole_match    = $matches[1];
-        $alt_text        = $matches[2];
+        $alt_text       = $matches[2];
         $url            = $matches[3] == '' ? $matches[4] : $matches[3];
-        $title            =& $matches[7];
+        $title          =& $matches[7];
         $attr  = $this->doExtraAttributes("img", $dummy =& $matches[8]);
 
         $alt_text = $this->encodeAttribute($alt_text);
         $url = $this->encodeURLAttribute($url);
         $result ='';
-        if (isset($title)) {
+        if (!empty(trim($title))) {
             $result =
                 "<figure>\n".
                 "<figcaption>$title</figcaption>\n";
@@ -267,7 +267,7 @@ class MarkdownGraph extends MarkdownExtra
             (?:\n|\A)
             # 1: Opening marker
             (
-                (?:~{3,}|`{3,}) # 3 or more tildes/backticks.
+                (?:~{3,}|`{3,})                         # 3 or more tildes/backticks.
                 )
                 [ ]*
                 (?:
@@ -281,12 +281,12 @@ class MarkdownGraph extends MarkdownExtra
                 (?:
                 ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
                 )?
-                [ ]* \n # Whitespace and newline following marker.
+                [ ]* \n                                 # Whitespace and newline following marker.
 
                 # $5: Content
                 (
                     (?>
-                    (?!\1 [ ]* \n)	# Not a closing marker.
+                    (?!\1 [ ]* \n)                      # Not a closing marker.
                     .*\n+
                     )+
                     )
@@ -355,55 +355,55 @@ class MarkdownGraph extends MarkdownExtra
         $less_than_tab = $this->tab_width - 1;
         // Find tables with leading pipe.
         //
-        //	| Header 1 | Header 2 | "title"
-        //	| -------- | --------
-        //	| Cell 1   | Cell 2
-        //	| Cell 3   | Cell 4
+        //  | Header 1 | Header 2 | "title"
+        //  | -------- | --------
+        //  | Cell 1   | Cell 2
+        //  | Cell 3   | Cell 4
         $text = preg_replace_callback('
-			{
-				^							# Start of a line
-				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
-				[|]							# Optional leading pipe (present)
-				(.+?)   					# $1: Header row (at least one pipe)
-				(?:[|]?[ ]*\"([^\"]+?)\")?		# $2: title
-				[ ]*\n
-				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
-				[|] ([ ]*[-:]+[-| :]*) \n	# $3: Header underline
+            {
+                ^                               # Start of a line
+                [ ]{0,' . $less_than_tab . '}   # Allowed whitespace.
+                [|]                             # Optional leading pipe (present)
+                (.+?)                           # $1: Header row (at least one pipe)
+                (?:[|]?[ ]*\"([^\"]+?)\")?      # $2: title
+                [ ]*\n
+                [ ]{0,' . $less_than_tab . '}   # Allowed whitespace.
+                [|] ([ ]*[-:]+[-| :]*) \n       # $3: Header underline
 
-				(							# $4: Cells
-					(?>
-						[ ]*				# Allowed whitespace.
-						[|] .* \n			# Row content.
-					)*
-				)
-				(?=\n|\Z)					# Stop at final double newline.
-			}xm',
+                (                               # $4: Cells
+                    (?>
+                        [ ]*                    # Allowed whitespace.
+                        [|] .* \n               # Row content.
+                    )*
+                )
+                (?=\n|\Z)                       # Stop at final double newline.
+            }xm',
             array($this, '_doTable_leadingPipe_callback'), $text);
 
         // Find tables without leading pipe.
         //
-        //	Header 1 | Header 2
-        //	-------- | --------
-        //	Cell 1   | Cell 2
-        //	Cell 3   | Cell 4
+        //  Header 1 | Header 2
+        //  -------- | --------
+        //  Cell 1   | Cell 2
+        //  Cell 3   | Cell 4
         $text = preg_replace_callback('
-			{
-				^							# Start of a line
-				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
-				(\S.*[|].*?)				# $1: Header row (at least one pipe)
-				(?:[ ]*\"([^\"]+?)\")?			# $2: title
-				[ ]*\n
+            {
+                ^                               # Start of a line
+                [ ]{0,' . $less_than_tab . '}   # Allowed whitespace.
+                (\S.*[|].*?)                    # $1: Header row (at least one pipe)
+                (?:[ ]*\"([^\"]+?)\")?          # $2: title
+                [ ]*\n
 
-				[ ]{0,' . $less_than_tab . '}	# Allowed whitespace.
-				([-:]+[ ]*[|][-| :]*) \n	# $2: Header underline
+                [ ]{0,' . $less_than_tab . '}   # Allowed whitespace.
+                ([-:]+[ ]*[|][-| :]*) \n        # $2: Header underline
 
-				(							# $3: Cells
-					(?>
-						.* [|] .* \n		# Row content
-					)*
-				)
-				(?=\n|\Z)					# Stop at final double newline.
-			}xm',
+                (                               # $3: Cells
+                    (?>
+                        .* [|] .* \n            # Row content
+                    )*
+                )
+                (?=\n|\Z)                       # Stop at final double newline.
+            }xm',
             array($this, '_DoTable_callback'), $text);
 
         return $text;
@@ -519,7 +519,7 @@ class MarkdownGraph extends MarkdownExtra
 
     /**
      * Take the string $str and parse it into tokens, hashing embeded HTML,
-     * escaped characters and handling code spans.
+     * escaped characters and handling del spans.
      * @param  string $str
      * @return string
      */
@@ -537,8 +537,8 @@ class MarkdownGraph extends MarkdownExtra
 
         while (1) {
             // Each loop iteration seach for either the next tag, the next
-            // openning code span marker, or the next escaped character.
-            // Each token is then passed to handleSpanToken.
+            // openning del span marker, or the next escaped character.
+            // Each token is then passed to handleDeleteSpanToken.
             $parts = preg_split($span_re, $str, 2, PREG_SPLIT_DELIM_CAPTURE);
             // Create token from text preceding tag.
             if ($parts[0] != "") {
@@ -559,7 +559,7 @@ class MarkdownGraph extends MarkdownExtra
 
     /**
      * Take the string $str and parse it into tokens, hashing embeded HTML,
-     * escaped characters and handling code spans.
+     * escaped characters and handling code(key) spans.
      * @param  string $str
      * @return string
      */
@@ -577,8 +577,8 @@ class MarkdownGraph extends MarkdownExtra
 
         while (1) {
             // Each loop iteration seach for either the next tag, the next
-            // openning code span marker, or the next escaped character.
-            // Each token is then passed to handleSpanToken.
+            // openning code(key) span marker, or the next escaped character.
+            // Each token is then passed to handleCodeKeySpanToken.
             $parts = preg_split($span_re, $str, 2, PREG_SPLIT_DELIM_CAPTURE);
             // Create token from text preceding tag.
             if ($parts[0] != "") {
@@ -593,7 +593,6 @@ class MarkdownGraph extends MarkdownExtra
                 break;
             }
         }
-
         return $output;
     }
 
@@ -637,7 +636,7 @@ class MarkdownGraph extends MarkdownExtra
     }
 
     /**
-     * Create a code span markup for $code. Called from handleSpanToken.
+     * Create a del span markup for $delspan. Called from handleDeleteSpanToken.
      * @param  string $code
      * @return string
      */
@@ -647,7 +646,7 @@ class MarkdownGraph extends MarkdownExtra
     }
 
     /**
-     * Create a code span markup for $code. Called from handleSpanToken.
+     * Create a code span markup for $code. Called from makeCodeKeySpan.
      * @param  string $code
      * @return string
      */
