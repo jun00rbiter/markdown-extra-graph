@@ -36,6 +36,12 @@ class MarkdownGraph extends MarkdownExtra
         $this->block_gamut += array(
             "doGraphvizBlocks"    => 100,
         );
+        $this->span_gamut += array(
+            "parseCodeKeySpan" => -60,
+        );
+        $this->span_gamut += array(
+            "parseDeleteSpan" => -20,
+        );
         parent::__construct();
     }
 
@@ -510,4 +516,149 @@ class MarkdownGraph extends MarkdownExtra
 
         return $this->hashBlock($text) . "\n";
     }
+
+    /**
+     * Take the string $str and parse it into tokens, hashing embeded HTML,
+     * escaped characters and handling code spans.
+     * @param  string $str
+     * @return string
+     */
+    protected function parseDeleteSpan($str) {
+        $output = '';
+
+        $span_re = '{
+                (
+                    \\\\'.$this->escape_chars_re.'
+                |
+                    (?<![\\\\~])
+                    ~+                      # del span marker
+                )
+                }xs';
+
+        while (1) {
+            // Each loop iteration seach for either the next tag, the next
+            // openning code span marker, or the next escaped character.
+            // Each token is then passed to handleSpanToken.
+            $parts = preg_split($span_re, $str, 2, PREG_SPLIT_DELIM_CAPTURE);
+            // Create token from text preceding tag.
+            if ($parts[0] != "") {
+                $output .= $parts[0];
+            }
+
+            // Check if we reach the end.
+            if (isset($parts[1])) {
+                $output .= $this->handleDeleteSpanToken($parts[1], $parts[2]);
+                $str = $parts[2];
+            } else {
+                break;
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Take the string $str and parse it into tokens, hashing embeded HTML,
+     * escaped characters and handling code spans.
+     * @param  string $str
+     * @return string
+     */
+    protected function parseCodeKeySpan($str) {
+        $output = '';
+
+        $span_re = '{
+                (
+                    \\\\'.$this->escape_chars_re.'
+                |
+                    (?<![\\\\~])
+                    ```+                # code (key) span marker
+                )
+                }xs';
+
+        while (1) {
+            // Each loop iteration seach for either the next tag, the next
+            // openning code span marker, or the next escaped character.
+            // Each token is then passed to handleSpanToken.
+            $parts = preg_split($span_re, $str, 2, PREG_SPLIT_DELIM_CAPTURE);
+            // Create token from text preceding tag.
+            if ($parts[0] != "") {
+                $output .= $parts[0];
+            }
+
+            // Check if we reach the end.
+            if (isset($parts[1])) {
+                $output .= $this->handleCodeKeySpanToken($parts[1], $parts[2]);
+                $str = $parts[2];
+            } else {
+                break;
+            }
+        }
+
+        return $output;
+    }
+
+
+    protected function handleDeleteSpanToken($token, &$str) {
+        switch ($token{0}) {
+            case "\\":
+                return $this->hashPart("&#". ord($token{1}). ";");
+            case "~":
+                // Search for end marker in remaining text.
+                if (preg_match('/^(.*?[^~])'.preg_quote($token).'(?!~)(.*)$/sm',
+                    $str, $matches))
+                {
+                    $str = $matches[2];
+                    $delspan = $this->makeDelSpan($matches[1]);
+                    return $this->hashPart($delspan);
+                }
+                return $token; // Return as text since no ending marker found.
+            default:
+                return $this->hashPart($token);
+        }
+    }
+
+    protected function handleCodeKeySpanToken($token, &$str) {
+        switch ($token{0}) {
+            case "\\":
+                return $this->hashPart("&#". ord($token{1}). ";");
+            case "`":
+                // Search for end marker in remaining text.
+                if (preg_match('/^(.*?[^`])'.preg_quote($token).'(?!`)(.*)$/sm',
+                    $str, $matches))
+                {
+                    $str = $matches[2];
+                    $delspan = $this->makeCodeKeySpan($matches[1]);
+                    return $this->hashPart($delspan);
+                }
+                return $token; // Return as text since no ending marker found.
+            default:
+                return $this->hashPart($token);
+        }
+    }
+
+    /**
+     * Create a code span markup for $code. Called from handleSpanToken.
+     * @param  string $code
+     * @return string
+     */
+    protected function makeDelSpan($delspan) {
+        $delspan = htmlspecialchars(trim($delspan), ENT_NOQUOTES);
+        return $this->hashPart("<del>$delspan</del>");
+    }
+
+    /**
+     * Create a code span markup for $code. Called from handleSpanToken.
+     * @param  string $code
+     * @return string
+     */
+    protected function makeCodeKeySpan($code) {
+        if ($this->code_span_content_func) {
+            $code = call_user_func($this->code_span_content_func, $code);
+        } else {
+            $code = htmlspecialchars(trim($code), ENT_NOQUOTES);
+        }
+        return $this->hashPart("<code class=\"key\">$code</code>");
+    }
+
+
 }
