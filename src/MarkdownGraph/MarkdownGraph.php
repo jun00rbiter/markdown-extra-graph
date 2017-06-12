@@ -15,9 +15,9 @@ use Michelf\MarkdownExtra;
 
 class MarkdownGraph extends MarkdownExtra
 {
-    public $dot_store_directory = '';
-    public $svg_store_directory = '';
-    public $url_prefix = '';
+    public $dotStoreDirectory = '';
+    public $svgStoreDirectory = '';
+    public $urlPrefix = '';
     public $graphvizDir = '';
 
     public $chapter_no = 0;
@@ -105,29 +105,60 @@ class MarkdownGraph extends MarkdownExtra
         $title     = trim($matches[2]);
         $codeblock = $matches[5];
 
-        $out = [];
-        $filebase = md5($codeblock);
-        file_put_contents($this->dot_store_directory."{$filebase}.dot", $codeblock);
-        $cmd = "{$this->graphvizDir}dot.exe -Tsvg -o " . str_replace("\\", '/', $this->svg_store_directory) . "{$filebase}.svg "
-        . str_replace("\\", '/', $this->dot_store_directory) . "{$filebase}.dot";
-        exec($cmd, $out);
+        $vizDir = rtrim($this->graphvizDir, '/');
+        $vizDir = !empty($vizDir)? $vizDir.'/' : '';
+        $dotDir = rtrim($this->dotStoreDirectory, '/');
+        $dotDir = !empty($dotDir)? $dotDir.'/' : '';
+        $imgDir = rtrim($this->svgStoreDirectory, '/');
+        $imgDir = !empty($imgDir)? $imgDir.'/' : '';
 
-        $classes = array();
-        if ($classname != "") {
-            if ($classname{0} == '.') {
-                $classname = substr($classname, 1);
-            }
-            $classes[] = $this->code_class_prefix . $classname;
+        if(!file_exists($imgDir)){
+            mkdir($imgDir);
         }
-        $attr_str = $this->doExtraAttributes('img', $attrs, null, $classes);
+        if(!file_exists($dotDir)){
+            mkdir($dotDir);
+        }
 
-        // $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
-        $codeblock =
-            "<figure>\n" .
-            "<figcaption>$title</figcaption>\n" .
-            //"<object$attr_str type=\"image/svg+xml\" data=\"{$this->url_prefix}{$filebase}.svg\"></object>\n" .
-            "<img$attr_str src=\"{$this->url_prefix}{$filebase}.svg\" />\n" .
-            "</figure>";
+        if(!empty($this->graphvizDir)){
+            $out = [];
+            $filebase = md5($codeblock);
+            $dothash = $filebase;
+            if(!empty($title)){
+                $filebase = trim(preg_replace('{[/\\~:*+&%$#!?")(]}', '_', $title));
+            }
+
+            $makeSvg = false;
+            if(!file_exists("{$dotDir}{$filebase}.dot")){
+                $makeSvg = true;
+            }else{
+                if($dothash !== md5(file_get_contents("{$dotDir}{$filebase}.dot"))){
+                    $makeSvg = true;
+                }
+            }
+            if($makeSvg){
+                file_put_contents("{$dotDir}{$filebase}.dot", $codeblock);
+                $cmd = "{$vizDir}dot.exe -Tsvg -o {$imgDir}{$filebase}.svg {$dotDir}{$filebase}.dot";
+                exec($cmd, $out);
+            }
+
+            $classes = array();
+            if ($classname != "") {
+                if ($classname{0} == '.') {
+                    $classname = substr($classname, 1);
+                }
+                $classes[] = $this->code_class_prefix . $classname;
+            }
+            $attr_str = $this->doExtraAttributes('img', $attrs, null, $classes);
+
+            // $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
+            $codeblock =
+                "<figure>\n" .
+                "<figcaption>$title</figcaption>\n" .
+                "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.svg\" />\n" .
+                "</figure>";
+        }else{
+            $codeblock = '<pre><code>'.$title."\n".$codeblock.'</code></pre>';
+        }
         return "\n".$this->hashBlock($codeblock)."\n\n";
     }
 
@@ -194,7 +225,7 @@ class MarkdownGraph extends MarkdownExtra
                 $header_str = "{$this->chapter_no}.{$this->section_no}.{$this->paragraph_no} ";
             }
 
-            $id = sprintf("#sec_%02d_%02d_%02d", $this->chapter_no, $this->section_no, $this->paragraph_no);
+            $id = sprintf("sec_%02d_%02d_%02d", $this->chapter_no, $this->section_no, $this->paragraph_no);
             $block = "<h$level id=\"$id\"$attr>$header_str$title</h$level>\n";
         }
 
@@ -207,13 +238,13 @@ class MarkdownGraph extends MarkdownExtra
             case 'pre':
                 $this->list_no++;
                    $fig_str = "リスト{$this->chapter_no}.{$this->list_no}) ";
-                $id = sprintf("#list_%02d_%02d", $this->chapter_no, $this->list_no);
+                $id = sprintf("list_%02d_%02d", $this->chapter_no, $this->list_no);
                 break;
             case 'object':
             case 'img':
                 $this->figure_no++;
                   $fig_str = "図{$this->chapter_no}.{$this->figure_no}) ";
-                $id = sprintf("#fig_%02d_%02d", $this->chapter_no, $this->figure_no);
+                $id = sprintf("fig_%02d_%02d", $this->chapter_no, $this->figure_no);
             }
 
             $block = "<figcaption id=\"$id\">$fig_str$title</figcaption>\n";
@@ -223,7 +254,7 @@ class MarkdownGraph extends MarkdownExtra
             $title =& $matches[9];
             $this->table_no++;
             $table_str = "表{$this->chapter_no}.{$this->table_no}) ";
-            $id = sprintf("#table_%02d_%02d", $this->chapter_no, $this->table_no);
+            $id = sprintf("table_%02d_%02d", $this->chapter_no, $this->table_no);
             $block = "<caption id=\"$id\">$table_str$title</caption>\n";
         }
         return "$block";
