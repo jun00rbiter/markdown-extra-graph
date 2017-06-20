@@ -19,6 +19,7 @@ class MarkdownGraph extends MarkdownExtra
     public $svgStoreDirectory = '';
     public $urlPrefix = '';
     public $graphvizDir = '';
+    public $imageType = 'png';
 
     public $chapter_no = 0;
     public $section_no = 0;
@@ -137,7 +138,7 @@ class MarkdownGraph extends MarkdownExtra
             }
             if($makeSvg){
                 file_put_contents("{$dotDir}{$filebase}.dot", $codeblock);
-                $cmd = "{$vizDir}dot.exe -Tsvg -o {$imgDir}{$filebase}.svg {$dotDir}{$filebase}.dot";
+                $cmd = "{$vizDir}dot.exe -Gdpi=100 -Nfontname=serif -Gfontname=serif -Efontname=serif -T{$this->imageType} -o {$imgDir}{$filebase}.{$this->imageType} {$dotDir}{$filebase}.dot";
                 exec($cmd, $out);
             }
 
@@ -154,7 +155,7 @@ class MarkdownGraph extends MarkdownExtra
             $codeblock =
                 "<figure>\n" .
                 "<figcaption>$title</figcaption>\n" .
-                "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.svg\" />\n" .
+                "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.{$this->imageType}\" />\n" .
                 "</figure>";
         }else{
             $codeblock = '<pre><code>'.$title."\n".$codeblock.'</code></pre>';
