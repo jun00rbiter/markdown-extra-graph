@@ -16,10 +16,11 @@ use Michelf\MarkdownExtra;
 class MarkdownGraph extends MarkdownExtra
 {
     public $dotStoreDirectory = '';
-    public $svgStoreDirectory = '';
+    public $imageStoreDirectory = '';
     public $urlPrefix = '';
     public $graphvizDir = '';
     public $imageType = 'png';
+    public $createImageTypes = ['png','svg'];
 
     public $chapter_no = 0;
     public $section_no = 0;
@@ -110,7 +111,7 @@ class MarkdownGraph extends MarkdownExtra
         $vizDir = !empty($vizDir)? $vizDir.'/' : '';
         $dotDir = rtrim($this->dotStoreDirectory, '/');
         $dotDir = !empty($dotDir)? $dotDir.'/' : '';
-        $imgDir = rtrim($this->svgStoreDirectory, '/');
+        $imgDir = rtrim($this->imageStoreDirectory, '/');
         $imgDir = !empty($imgDir)? $imgDir.'/' : '';
 
         if(!file_exists($imgDir)){
@@ -138,8 +139,10 @@ class MarkdownGraph extends MarkdownExtra
             }
             if($makeSvg){
                 file_put_contents("{$dotDir}{$filebase}.dot", $codeblock);
-                $cmd = "{$vizDir}dot.exe -Gdpi=100 -Nfontname=serif -Gfontname=serif -Efontname=serif -T{$this->imageType} -o {$imgDir}{$filebase}.{$this->imageType} {$dotDir}{$filebase}.dot";
-                exec($cmd, $out);
+                foreach($this->createImageTypes as $imageType){
+                    $cmd = "{$vizDir}dot.exe -Nfontname=serif -Gfontname=serif -Efontname=serif -T{$imageType} -o {$imgDir}{$filebase}.{$imageType} {$dotDir}{$filebase}.dot";
+                    exec($cmd, $out);
+                }
             }
 
             $classes = array();
