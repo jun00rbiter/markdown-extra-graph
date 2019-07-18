@@ -110,13 +110,13 @@ class MarkdownGraph extends MarkdownExtra
                 $existAttrHeight = false;
                 $tag = preg_replace_callback('/height=\".+?\"/',function($matches)use($height,&$existAttrHeight){
                     $existAttrHeight = true;
-                    return "height=\"{$height}px\"";
+                    return "height=\"{$height}\"";
                 }, $tag);
                 $tag = preg_replace_callback('/width=\".+?\"/',function($matches)use($height,&$existAttrHeight,$width){
                     if($existAttrHeight){
-                        return "width=\"{$width}px\"";
+                        return "width=\"{$width}\"";
                     }else{
-                        return "width=\"{$width}px\" height=\"{$height}px\"";
+                        return "width=\"{$width}\" height=\"{$height}\"";
                     }
                 }, $tag);
             }
@@ -237,7 +237,7 @@ class MarkdownGraph extends MarkdownExtra
         //         "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.png\" />\n" .
         //         "</figure>";
         // }
-        
+
         $codeblock =
             "<figure>\n" .
             "<figcaption>$title</figcaption>\n" .
