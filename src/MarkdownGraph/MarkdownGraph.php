@@ -19,6 +19,7 @@ class MarkdownGraph extends MarkdownExtra
     public $imageStoreDirectory = '';
     public $urlPrefix = '';
     public $graphvizDir = '';
+    public $mermaidDir = '';
     public $imageType = 'png';
     public $createImageTypes = ['png','svg'];
 
@@ -90,9 +91,38 @@ class MarkdownGraph extends MarkdownExtra
                 # Closing marker.
                 \1 [ ]* (?= \n )
             }xm',
-            array($this, '_doGraphvizBlocks_callback'), $text);
+            array($this, '_doExtraGraphBlocks_callback'), $text);
 
         return $text;
+    }
+
+    protected function _fixSizeSVG($svgFile){
+        // mermaidが生成するsvgは縦横サイズがきちんと入っていない。
+        // viewBoxからサイズを取得し、svgタグを書き換える。
+        $svg = file_get_contents($svgFile);
+        file_put_contents($svgFile.'.org',$svg);
+        if(preg_match('/<svg .+?>/',$svg,$m)){
+            $tagOrigin = $m[0];
+            $tag = $tagOrigin;
+            if (preg_match('/viewBox=\"([\-0-9.]+)[ ]+([\-0-9.]+)[ ]+([0-9.]+)[ ]+([0-9.]+)[ ]*\"/', $tagOrigin, $m)) {
+                $width = ceil(floatval($m[3]));
+                $height = ceil(floatval($m[4]));
+                $existAttrHeight = false;
+                $tag = preg_replace_callback('/height=\".+?\"/',function($matches)use($height,&$existAttrHeight){
+                    $existAttrHeight = true;
+                    return "height=\"{$height}px\"";
+                }, $tag);
+                $tag = preg_replace_callback('/width=\".+?\"/',function($matches)use($height,&$existAttrHeight,$width){
+                    if($existAttrHeight){
+                        return "width=\"{$width}px\"";
+                    }else{
+                        return "width=\"{$width}px\" height=\"{$height}px\"";
+                    }
+                }, $tag);
+            }
+            $svg = str_replace($tagOrigin, $tag, $svg);
+            file_put_contents($svgFile, $svg);
+        }
     }
 
     /**
@@ -100,20 +130,44 @@ class MarkdownGraph extends MarkdownExtra
      * @param  array $matches
      * @return string
      */
-    protected function _doGraphvizBlocks_callback($matches)
+    protected function _doExtraGraphBlocks_callback($matches)
     {
         $classname =& $matches[2];
         $attrs     =& $matches[4];
         $title     = trim($matches[3]);
         $codeblock = $matches[5];
 
+        switch ($classname) {
+        case 'mermaid':
+            $mode='mermaid';
+            $ext='mmd';
+            if (empty($this->mermaidDir)) {
+                return "\n".$this->hashBlock('<pre><code>'.$codeblock.'</code></pre>')."\n\n";
+            }
+            break;
+        case 'dot':
+        default:
+            $mode='dot';
+            $ext='dot';
+            if (empty($this->graphvizDir)) {
+                return "\n".$this->hashBlock('<pre><code>'.$codeblock.'</code></pre>')."\n\n";
+
+            }
+            break;
+        }
 
         $vizDir = rtrim($this->graphvizDir, '/');
-        $vizDir = !empty($vizDir)? $vizDir.'/' : '';
+        $vizDir = rtrim($this->graphvizDir, DIRECTORY_SEPARATOR);
+        $vizDir = !empty($vizDir)? $vizDir.DIRECTORY_SEPARATOR  : '';
+        $mermaidDir = rtrim($this->mermaidDir, '/');
+        $mermaidDir = rtrim($this->mermaidDir, DIRECTORY_SEPARATOR);
+        $mermaidDir = !empty($mermaidDir)? $mermaidDir.DIRECTORY_SEPARATOR  : '';
         $dotDir = rtrim($this->dotStoreDirectory, '/');
-        $dotDir = !empty($dotDir)? $dotDir.'/' : '';
+        $dotDir = rtrim($this->dotStoreDirectory, DIRECTORY_SEPARATOR);
+        $dotDir = !empty($dotDir)? $dotDir.DIRECTORY_SEPARATOR  : '';
         $imgDir = rtrim($this->imageStoreDirectory, '/');
-        $imgDir = !empty($imgDir)? $imgDir.'/' : '';
+        $imgDir = rtrim($this->imageStoreDirectory, DIRECTORY_SEPARATOR);
+        $imgDir = !empty($imgDir)? $imgDir.DIRECTORY_SEPARATOR  : '';
 
         if(!file_exists($imgDir)){
             mkdir($imgDir);
@@ -122,48 +176,73 @@ class MarkdownGraph extends MarkdownExtra
             mkdir($dotDir);
         }
 
-        if(!empty($this->graphvizDir)){
-            $out = [];
-            $filebase = md5($codeblock);
-            $dothash = $filebase;
-            if(!empty($title)){
-                $filebase = trim(preg_replace('{[/\\~:*+&%$#!?")(]}', '_', $title));
-            }
-
-            $makeSvg = false;
-            if(!file_exists("{$dotDir}{$filebase}.dot")){
-                $makeSvg = true;
-            }else{
-                if($dothash !== md5(file_get_contents("{$dotDir}{$filebase}.dot"))){
-                    $makeSvg = true;
-                }
-            }
-            if($makeSvg){
-                file_put_contents("{$dotDir}{$filebase}.dot", $codeblock);
-                foreach($this->createImageTypes as $imageType){
-                    $cmd = "{$vizDir}dot.exe -Nfontname=serif -Gfontname=serif -Efontname=serif -T{$imageType} -o {$imgDir}{$filebase}.{$imageType} {$dotDir}{$filebase}.dot";
-                    exec($cmd, $out);
-                }
-            }
-
-            $classes = array();
-            if ($classname != "") {
-                if ($classname{0} == '.') {
-                    $classname = substr($classname, 1);
-                }
-                $classes[] = $this->code_class_prefix . $classname;
-            }
-            $attr_str = $this->doExtraAttributes('img', $attrs, null, $classes);
-
-            // $codeblock  = "<img$attr_str src=\"graph/{$filebase}.svg\" />";
-            $codeblock =
-                "<figure>\n" .
-                "<figcaption>$title</figcaption>\n" .
-                "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.{$this->imageType}\" />\n" .
-                "</figure>";
-        }else{
-            $codeblock = '<pre><code>'.$title."\n".$codeblock.'</code></pre>';
+        $out = [];
+        $filebase = md5($codeblock);
+        $dothash = $filebase;
+        if(!empty($title)){
+            $filebase = trim(preg_replace('{[/\\~:*+&%$#!?")(]}', '_', $title));
         }
+
+        $makeImages = false;
+        if (!file_exists("{$dotDir}{$filebase}.{$ext}")) {
+            $makeImages = true;
+        } else {
+            //既存ファイル在り
+            if($dothash !== md5(file_get_contents("{$dotDir}{$filebase}.{$ext}"))){
+                //既存ファイルが更新
+                $makeImages = true;
+            }
+        }
+
+        if($makeImages){
+            file_put_contents("{$dotDir}{$filebase}.{$ext}", $codeblock);
+            foreach($this->createImageTypes as $imageType){
+                switch($mode){
+                case 'dot':
+                    $cmd = "{$vizDir}dot -Nfontname=serif -Gfontname=serif -Efontname=serif -T{$imageType} -o {$imgDir}{$filebase}.{$imageType} {$dotDir}{$filebase}.{$ext}";
+                    exec($cmd, $out);
+                    break;
+                case 'mermaid':
+                    $cmd = "{$mermaidDir}mmdc -o {$imgDir}{$filebase}.{$imageType} -i {$dotDir}{$filebase}.{$ext}";
+                    exec($cmd, $out);
+                    $this->_fixSizeSVG("{$imgDir}{$filebase}.{$imageType}");
+                    break;
+                }
+            }
+        }
+
+        $classes = array();
+        if ($classname != "") {
+            if ($classname{0} == '.') {
+                $classname = substr($classname, 1);
+            }
+            $classes[] = $this->code_class_prefix . $classname;
+        }
+        $attr_str = $this->doExtraAttributes('img', $attrs, null, $classes);
+
+        // if($this->imageType==='svg'){
+        //     $svg = "SVG file not exist.";
+        //     if(file_exists("{$this->urlPrefix}{$filebase}.{$this->imageType}")){
+        //         $svg = file_get_contents("{$this->urlPrefix}{$filebase}.{$this->imageType}");
+        //     }
+        //     $codeblock =
+        //         "<figure>\n" .
+        //         "<figcaption>$title</figcaption>\n" .
+        //         "<div$attr_str>\n".$svg."</div>\n" .
+        //         "</figure>";
+        // }else{
+        //     $codeblock =
+        //         "<figure>\n" .
+        //         "<figcaption>$title</figcaption>\n" .
+        //         "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.png\" />\n" .
+        //         "</figure>";
+        // }
+        
+        $codeblock =
+            "<figure>\n" .
+            "<figcaption>$title</figcaption>\n" .
+            "<img$attr_str src=\"{$this->urlPrefix}{$filebase}.{$this->imageType}\" />\n" .
+            "</figure>";
         return "\n".$this->hashBlock($codeblock)."\n\n";
     }
 
@@ -246,6 +325,7 @@ class MarkdownGraph extends MarkdownExtra
                 $id = sprintf("list_%02d_%02d", $this->chapter_no, $this->list_no);
                 break;
             case 'object':
+            case 'div':
             case 'img':
                 $this->figure_no++;
                   $fig_str = "図{$this->chapter_no}.{$this->figure_no}) ";
@@ -348,8 +428,11 @@ class MarkdownGraph extends MarkdownExtra
         $attrs     =& $matches[4];
         $codeblock = $matches[5];
 
-        if ($classname=='dot') {
-            return $this->_doGraphvizBlocks_callback($matches);
+        if ($classname=='dot'||$classname=='mermaid') {
+            $contents = $this->_doExtraGraphBlocks_callback($matches);
+            if($contents){
+                return $contents;
+            }
         }
 
         if ($this->code_block_content_func) {
