@@ -348,6 +348,10 @@ class MarkdownGraph extends MarkdownExtra
         $attrs     =& $matches[4];
         $codeblock = $matches[5];
 
+        if ($classname=='dot') {
+            return $this->_doGraphvizBlocks_callback($matches);
+        }
+
         if ($this->code_block_content_func) {
             $codeblock = call_user_func($this->code_block_content_func, $codeblock, $classname);
         } else {
