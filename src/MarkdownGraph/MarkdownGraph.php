@@ -67,11 +67,11 @@ class MarkdownGraph extends MarkdownExtra
                 )
                 [ ]*
                 (?:
-                    \"(.+)\"                                # $2: graph title
+                    \.?([-_:a-zA-Z0-9]+)                    # $2: standalone class name
                 )?
                 [ ]*
                 (?:
-                    \.?([-_:a-zA-Z0-9]+)                    # $3: standalone class name
+                    \"(.+)\"                                # $3: graph title
                 )?
                 [ ]*
                 (?:
@@ -102,10 +102,11 @@ class MarkdownGraph extends MarkdownExtra
      */
     protected function _doGraphvizBlocks_callback($matches)
     {
-        $classname =& $matches[3];
+        $classname =& $matches[2];
         $attrs     =& $matches[4];
-        $title     = trim($matches[2]);
+        $title     = trim($matches[3]);
         $codeblock = $matches[5];
+
 
         $vizDir = rtrim($this->graphvizDir, '/');
         $vizDir = !empty($vizDir)? $vizDir.'/' : '';
@@ -298,23 +299,24 @@ class MarkdownGraph extends MarkdownExtra
     {
         $less_than_tab = $this->tab_width;
 
-        $text = preg_replace_callback('{
-            (?:\n|\A)
-            # 1: Opening marker
-            (
-                (?:~{3,}|`{3,})                         # 3 or more tildes/backticks.
+        $text = preg_replace_callback(
+            '{
+                (?:\n|\A)
+                # 1: Opening marker
+                (
+                    (?:~{3,}|`{3,})                         # 3 or more tildes/backticks.
                 )
                 [ ]*
                 (?:
-                \"(.+)\"                                # $2: graph title
+                    \.?([-_:a-zA-Z0-9]+)                # $2: standalone class name
                 )?
                 [ ]*
                 (?:
-                \.?([-_:a-zA-Z0-9]+)                    # $3: standalone class name
+                    \"(.+)\"                                # $3: graph title
                 )?
                 [ ]*
                 (?:
-                ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
+                    ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
                 )?
                 [ ]* \n                                 # Whitespace and newline following marker.
 
@@ -324,12 +326,12 @@ class MarkdownGraph extends MarkdownExtra
                     (?!\1 [ ]* \n)                      # Not a closing marker.
                     .*\n+
                     )+
-                    )
+                )
 
-                    # Closing marker.
-                    \1 [ ]* (?= \n )
-                }xm',
-                array($this, '_doFencedCodeBlocks_callback'), $text);
+                # Closing marker.
+                \1 [ ]* (?= \n )
+            }xm',
+            array($this, '_doFencedCodeBlocks_callback'), $text);
 
         return $text;
     }
@@ -341,8 +343,8 @@ class MarkdownGraph extends MarkdownExtra
     */
     protected function _doFencedCodeBlocks_callback($matches)
     {
-        $title     =& $matches[2];
-        $classname =& $matches[3];
+        $title     =& $matches[3];
+        $classname =& $matches[2];
         $attrs     =& $matches[4];
         $codeblock = $matches[5];
 
