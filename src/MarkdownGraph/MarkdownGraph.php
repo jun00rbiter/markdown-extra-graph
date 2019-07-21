@@ -60,7 +60,8 @@ class MarkdownGraph extends MarkdownExtra
     {
         $less_than_tab = $this->tab_width;
 
-        $text = preg_replace_callback('{
+        $text = preg_replace_callback(
+            '{
                 (?:\n|\A)
                 # 1: Opening marker
                 (
@@ -91,31 +92,34 @@ class MarkdownGraph extends MarkdownExtra
                 # Closing marker.
                 \1 [ ]* (?= \n )
             }xm',
-            array($this, '_doExtraGraphBlocks_callback'), $text);
+            array($this, '_doExtraGraphBlocks_callback'),
+            $text
+        );
 
         return $text;
     }
 
-    protected function _fixSizeSVG($svgFile){
+    protected function _fixSizeSVG($svgFile)
+    {
         // mermaidが生成するsvgは縦横サイズがきちんと入っていない。
         // viewBoxからサイズを取得し、svgタグを書き換える。
         $svg = file_get_contents($svgFile);
-        file_put_contents($svgFile.'.org',$svg);
-        if(preg_match('/<svg .+?>/',$svg,$m)){
+        file_put_contents($svgFile.'.org', $svg);
+        if (preg_match('/<svg .+?>/', $svg, $m)) {
             $tagOrigin = $m[0];
             $tag = $tagOrigin;
             if (preg_match('/viewBox=\"([\-0-9.]+)[ ]+([\-0-9.]+)[ ]+([0-9.]+)[ ]+([0-9.]+)[ ]*\"/', $tagOrigin, $m)) {
                 $width = ceil(floatval($m[3]));
                 $height = ceil(floatval($m[4]));
                 $existAttrHeight = false;
-                $tag = preg_replace_callback('/height=\".+?\"/',function($matches)use($height,&$existAttrHeight){
+                $tag = preg_replace_callback('/height=\".+?\"/', function ($matches) use ($height,&$existAttrHeight) {
                     $existAttrHeight = true;
                     return "height=\"{$height}\"";
                 }, $tag);
-                $tag = preg_replace_callback('/width=\".+?\"/',function($matches)use($height,&$existAttrHeight,$width){
-                    if($existAttrHeight){
+                $tag = preg_replace_callback('/width=\".+?\"/', function ($matches) use ($height,&$existAttrHeight,$width) {
+                    if ($existAttrHeight) {
                         return "width=\"{$width}\"";
-                    }else{
+                    } else {
                         return "width=\"{$width}\" height=\"{$height}\"";
                     }
                 }, $tag);
@@ -151,7 +155,6 @@ class MarkdownGraph extends MarkdownExtra
             $ext='dot';
             if (empty($this->graphvizDir)) {
                 return "\n".$this->hashBlock('<pre><code>'.$codeblock.'</code></pre>')."\n\n";
-
             }
             break;
         }
@@ -169,17 +172,17 @@ class MarkdownGraph extends MarkdownExtra
         $imgDir = rtrim($this->imageStoreDirectory, DIRECTORY_SEPARATOR);
         $imgDir = !empty($imgDir)? $imgDir.DIRECTORY_SEPARATOR  : '';
 
-        if(!file_exists($imgDir)){
+        if (!file_exists($imgDir)) {
             mkdir($imgDir);
         }
-        if(!file_exists($dotDir)){
+        if (!file_exists($dotDir)) {
             mkdir($dotDir);
         }
 
         $out = [];
         $filebase = md5($codeblock);
         $dothash = $filebase;
-        if(!empty($title)){
+        if (!empty($title)) {
             $filebase = trim(preg_replace('{[/\\~:*+&%$#!?")(]}', '_', $title));
         }
 
@@ -188,16 +191,16 @@ class MarkdownGraph extends MarkdownExtra
             $makeImages = true;
         } else {
             //既存ファイル在り
-            if($dothash !== md5(file_get_contents("{$dotDir}{$filebase}.{$ext}"))){
+            if ($dothash !== md5(file_get_contents("{$dotDir}{$filebase}.{$ext}"))) {
                 //既存ファイルが更新
                 $makeImages = true;
             }
         }
 
-        if($makeImages){
+        if ($makeImages) {
             file_put_contents("{$dotDir}{$filebase}.{$ext}", $codeblock);
-            foreach($this->createImageTypes as $imageType){
-                switch($mode){
+            foreach ($this->createImageTypes as $imageType) {
+                switch ($mode) {
                 case 'dot':
                     $cmd = "{$vizDir}dot -Nfontname=serif -Gfontname=serif -Efontname=serif -T{$imageType} -o {$imgDir}{$filebase}.{$imageType} {$dotDir}{$filebase}.{$ext}";
                     exec($cmd, $out);
@@ -273,7 +276,9 @@ class MarkdownGraph extends MarkdownExtra
                     [ ]*\n+
                 )
             }mx',
-            array($this, '_doNumbers_callback'), $text);
+            array($this, '_doNumbers_callback'),
+            $text
+        );
 
         return $text;
     }
@@ -388,7 +393,7 @@ class MarkdownGraph extends MarkdownExtra
                 )
                 [ ]*
                 (?:
-                    \.?([-_:a-zA-Z0-9]+)                # $2: standalone class name
+                    \.?([-_:a-zA-Z0-9]+)                    # $2: standalone class name
                 )?
                 [ ]*
                 (?:
@@ -398,20 +403,22 @@ class MarkdownGraph extends MarkdownExtra
                 (?:
                     ' . $this->id_class_attr_catch_re . '   # $4: Extra attributes
                 )?
-                [ ]* \n                                 # Whitespace and newline following marker.
+                [ ]* \n                                     # Whitespace and newline following marker.
 
                 # $5: Content
                 (
                     (?>
-                    (?!\1 [ ]* \n)                      # Not a closing marker.
-                    .*\n+
+                        (?!\1 [ ]* \n)                      # Not a closing marker.
+                        .*\n+
                     )+
                 )
 
                 # Closing marker.
                 \1 [ ]* (?= \n )
             }xm',
-            array($this, '_doFencedCodeBlocks_callback'), $text);
+            array($this, '_doFencedCodeBlocks_callback'),
+            $text
+        );
 
         return $text;
     }
@@ -430,7 +437,7 @@ class MarkdownGraph extends MarkdownExtra
 
         if ($classname=='dot'||$classname=='mermaid') {
             $contents = $this->_doExtraGraphBlocks_callback($matches);
-            if($contents){
+            if ($contents) {
                 return $contents;
             }
         }
@@ -441,8 +448,11 @@ class MarkdownGraph extends MarkdownExtra
             $codeblock = htmlspecialchars($codeblock, ENT_NOQUOTES);
         }
 
-        $codeblock = preg_replace_callback('/^\n+/',
-        array($this, '_doFencedCodeBlocks_newlines'), $codeblock);
+        $codeblock = preg_replace_callback(
+            '/^\n+/',
+            array($this, '_doFencedCodeBlocks_newlines'),
+            $codeblock
+        );
 
         $classes = array();
         if ($classname != "") {
@@ -483,7 +493,8 @@ class MarkdownGraph extends MarkdownExtra
         //  | -------- | --------
         //  | Cell 1   | Cell 2
         //  | Cell 3   | Cell 4
-        $text = preg_replace_callback('
+        $text = preg_replace_callback(
+            '
             {
                 ^                               # Start of a line
                 [ ]{0,' . $less_than_tab . '}   # Allowed whitespace.
@@ -502,7 +513,9 @@ class MarkdownGraph extends MarkdownExtra
                 )
                 (?=\n|\Z)                       # Stop at final double newline.
             }xm',
-            array($this, '_doTable_leadingPipe_callback'), $text);
+            array($this, '_doTable_leadingPipe_callback'),
+            $text
+        );
 
         // Find tables without leading pipe.
         //
@@ -510,7 +523,8 @@ class MarkdownGraph extends MarkdownExtra
         //  -------- | --------
         //  Cell 1   | Cell 2
         //  Cell 3   | Cell 4
-        $text = preg_replace_callback('
+        $text = preg_replace_callback(
+            '
             {
                 ^                               # Start of a line
                 [ ]{0,' . $less_than_tab . '}   # Allowed whitespace.
@@ -528,7 +542,9 @@ class MarkdownGraph extends MarkdownExtra
                 )
                 (?=\n|\Z)                       # Stop at final double newline.
             }xm',
-            array($this, '_DoTable_callback'), $text);
+            array($this, '_DoTable_callback'),
+            $text
+        );
 
         return $text;
     }
@@ -647,7 +663,8 @@ class MarkdownGraph extends MarkdownExtra
      * @param  string $str
      * @return string
      */
-    protected function parseDeleteSpan($str) {
+    protected function parseDeleteSpan($str)
+    {
         $output = '';
 
         $span_re = '{
@@ -687,7 +704,8 @@ class MarkdownGraph extends MarkdownExtra
      * @param  string $str
      * @return string
      */
-    protected function parseCodeKeySpan($str) {
+    protected function parseCodeKeySpan($str)
+    {
         $output = '';
 
         $span_re = '{
@@ -721,15 +739,18 @@ class MarkdownGraph extends MarkdownExtra
     }
 
 
-    protected function handleDeleteSpanToken($token, &$str) {
+    protected function handleDeleteSpanToken($token, &$str)
+    {
         switch ($token{0}) {
             case "\\":
                 return $this->hashPart("&#". ord($token{1}). ";");
             case "~":
                 // Search for end marker in remaining text.
-                if (preg_match('/^(.*?[^~])'.preg_quote($token).'(?!~)(.*)$/sm',
-                    $str, $matches))
-                {
+                if (preg_match(
+                    '/^(.*?[^~])'.preg_quote($token).'(?!~)(.*)$/sm',
+                    $str,
+                    $matches
+                )) {
                     $str = $matches[2];
                     $delspan = $this->makeDelSpan($matches[1]);
                     return $this->hashPart($delspan);
@@ -740,15 +761,18 @@ class MarkdownGraph extends MarkdownExtra
         }
     }
 
-    protected function handleCodeKeySpanToken($token, &$str) {
+    protected function handleCodeKeySpanToken($token, &$str)
+    {
         switch ($token{0}) {
             case "\\":
                 return $this->hashPart("&#". ord($token{1}). ";");
             case "`":
                 // Search for end marker in remaining text.
-                if (preg_match('/^(.*?[^`])'.preg_quote($token).'(?!`)(.*)$/sm',
-                    $str, $matches))
-                {
+                if (preg_match(
+                    '/^(.*?[^`])'.preg_quote($token).'(?!`)(.*)$/sm',
+                    $str,
+                    $matches
+                )) {
                     $str = $matches[2];
                     $delspan = $this->makeCodeKeySpan($matches[1]);
                     return $this->hashPart($delspan);
@@ -764,7 +788,8 @@ class MarkdownGraph extends MarkdownExtra
      * @param  string $code
      * @return string
      */
-    protected function makeDelSpan($delspan) {
+    protected function makeDelSpan($delspan)
+    {
         $delspan = htmlspecialchars(trim($delspan), ENT_NOQUOTES);
         return $this->hashPart("<del>$delspan</del>");
     }
@@ -774,7 +799,8 @@ class MarkdownGraph extends MarkdownExtra
      * @param  string $code
      * @return string
      */
-    protected function makeCodeKeySpan($code) {
+    protected function makeCodeKeySpan($code)
+    {
         if ($this->code_span_content_func) {
             $code = call_user_func($this->code_span_content_func, $code);
         } else {
@@ -782,6 +808,4 @@ class MarkdownGraph extends MarkdownExtra
         }
         return $this->hashPart("<code class=\"key\">$code</code>");
     }
-
-
 }
